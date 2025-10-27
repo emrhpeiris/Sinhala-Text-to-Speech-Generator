@@ -1,0 +1,5 @@
+{
+  "name": "Sinhala Text-to-Speech Generator",
+  "description": "Generate high-quality Sinhala audio from Unicode text using Google's Gemini API. Choose between single-speaker (male/female) or a two-speaker dialog format for conversational audio.",
+  "requestFramePermissions": []
+}

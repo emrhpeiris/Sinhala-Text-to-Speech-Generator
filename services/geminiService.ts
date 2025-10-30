@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Modality } from "@google/genai";
 import { VoiceOption } from '../types';
 
@@ -11,11 +10,6 @@ if (!API_KEY) {
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 const model = "gemini-2.5-flash-preview-tts";
 
-const VOICE_MAP = {
-  [VoiceOption.MALE]: 'Puck',
-  [VoiceOption.FEMALE]: 'Kore',
-};
-
 export async function generateSingleSpeakerAudio(text: string, voice: VoiceOption): Promise<string> {
   const response = await ai.models.generateContent({
     model: model,
@@ -24,7 +18,7 @@ export async function generateSingleSpeakerAudio(text: string, voice: VoiceOptio
       responseModalities: [Modality.AUDIO],
       speechConfig: {
         voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: VOICE_MAP[voice] },
+          prebuiltVoiceConfig: { voiceName: voice },
         },
       },
     },
@@ -68,13 +62,13 @@ export async function generateDialogAudio(text: string): Promise<string> {
             {
               speaker: speakers[0],
               voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: VOICE_MAP[VoiceOption.MALE] },
+                prebuiltVoiceConfig: { voiceName: 'Puck' }, // Male default
               },
             },
             {
               speaker: speakers[1],
               voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: VOICE_MAP[VoiceOption.FEMALE] },
+                prebuiltVoiceConfig: { voiceName: 'Kore' }, // Female default
               },
             },
           ],

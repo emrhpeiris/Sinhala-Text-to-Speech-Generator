@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { GenerationMode, VoiceOption } from './types';
+import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES } from './types';
 import { generateSingleSpeakerAudio, generateDialogAudio } from './services/geminiService';
 import { decode, createWavBlob } from './utils/audioUtils';
 import Loader from './components/Loader';
@@ -9,7 +8,7 @@ import AudioPlayer from './components/AudioPlayer';
 const App: React.FC = () => {
   const [text, setText] = useState<string>('');
   const [generationMode, setGenerationMode] = useState<GenerationMode>(GenerationMode.SINGLE);
-  const [voice, setVoice] = useState<VoiceOption>(VoiceOption.MALE);
+  const [voice, setVoice] = useState<VoiceOption>('Puck'); // Default to the first male voice
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,11 +107,33 @@ const App: React.FC = () => {
         </section>
 
         {generationMode === GenerationMode.SINGLE && (
-          <section className="space-y-4 animate-fade-in">
+          <section className="space-y-6 animate-fade-in">
             <h2 className="text-lg font-semibold text-slate-700">2. Choose Voice</h2>
-            <div className="grid grid-cols-2 gap-4">
-                <VoiceButton option={VoiceOption.MALE} label="Male" icon="fa-male" />
-                <VoiceButton option={VoiceOption.FEMALE} label="Female" icon="fa-female" />
+            
+            <div>
+              <h3 className="text-md font-medium text-slate-600 mb-3">Male Voices</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {MALE_VOICES.map((voiceName, index) => (
+                    <VoiceButton key={voiceName} option={voiceName} label={`Male ${index + 1}`} icon="fa-male" />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-md font-medium text-slate-600 mb-3">Female Voices</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {FEMALE_VOICES.map((voiceName, index) => (
+                    <VoiceButton key={voiceName} option={voiceName} label={`Female ${index + 1}`} icon="fa-female" />
+                ))}
+              </div>
+            </div>
+
+            <div>
+                <h3 className="text-md font-medium text-slate-600 mb-3">Kids Voices</h3>
+                <div className="bg-slate-100 p-3 rounded-lg text-center text-slate-500 text-sm">
+                    <i className="fas fa-child mr-2"></i>
+                    Child voice options are not yet available.
+                </div>
             </div>
           </section>
         )}

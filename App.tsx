@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES } from './types';
 import { generateSingleSpeakerAudio, generateDialogAudio } from './services/geminiService';
@@ -8,12 +9,13 @@ import AudioPlayer from './components/AudioPlayer';
 const App: React.FC = () => {
   const [text, setText] = useState<string>('');
   const [generationMode, setGenerationMode] = useState<GenerationMode>(GenerationMode.SINGLE);
-  const [voice, setVoice] = useState<VoiceOption>('Puck'); // Default to the first male voice
+  const [voice, setVoice] = useState<VoiceOption>('Puck');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Cleanup audio URL on component unmount or when a new one is created
     return () => {
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
@@ -30,7 +32,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
+      URL.revokeObjectURL(audioUrl);
     }
     setAudioUrl(null);
 
@@ -58,7 +60,7 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   }, [text, generationMode, voice, audioUrl]);
-
+  
   const ModeButton: React.FC<{mode: GenerationMode; label: string}> = ({ mode, label }) => (
     <button
       onClick={() => setGenerationMode(mode)}
@@ -84,18 +86,26 @@ const App: React.FC = () => {
         <i className={`fas ${icon} mr-2`}></i>
         {label}
     </button>
-  )
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <main className="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 sm:p-8 space-y-8 border border-slate-200">
-        <header className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-slate-800">
-            Sinhala Text-to-Speech Generator
-          </h1>
-          <p className="mt-2 text-slate-600">
-            Powered by Google's Gemini AI
+        <header className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img src="https://metaphoragency.com/assets/img/hero/shape-3.png" alt="Metaphor Logo" className="h-16 w-auto" />
+          </div>
+          <p className="text-xl font-semibold text-indigo-600 tracking-wide">
+            Metaphor Marketing Agency
           </p>
+          <div className="pt-2">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-800">
+              Sinhala Text-to-Speech
+            </h1>
+            <p className="text-slate-600">
+              Powered by Google's Gemini AI
+            </p>
+          </div>
         </header>
 
         <section className="space-y-4">
@@ -109,7 +119,6 @@ const App: React.FC = () => {
         {generationMode === GenerationMode.SINGLE && (
           <section className="space-y-6 animate-fade-in">
             <h2 className="text-lg font-semibold text-slate-700">2. Choose Voice</h2>
-            
             <div>
               <h3 className="text-md font-medium text-slate-600 mb-3">Male Voices</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -118,7 +127,6 @@ const App: React.FC = () => {
                 ))}
               </div>
             </div>
-
             <div>
               <h3 className="text-md font-medium text-slate-600 mb-3">Female Voices</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -126,14 +134,6 @@ const App: React.FC = () => {
                     <VoiceButton key={voiceName} option={voiceName} label={`Female ${index + 1}`} icon="fa-female" />
                 ))}
               </div>
-            </div>
-
-            <div>
-                <h3 className="text-md font-medium text-slate-600 mb-3">Kids Voices</h3>
-                <div className="bg-slate-100 p-3 rounded-lg text-center text-slate-500 text-sm">
-                    <i className="fas fa-child mr-2"></i>
-                    Child voice options are not yet available.
-                </div>
             </div>
           </section>
         )}
@@ -146,9 +146,7 @@ const App: React.FC = () => {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={
-              generationMode === GenerationMode.SINGLE
-                ? 'මෙතනින් සිංහල යුනිකෝඩ් යොදන්න...'
-                : 'Format:\nSpeaker 1: Hello\nSpeaker 2: Hi there!'
+              generationMode === GenerationMode.SINGLE ? 'මෙතනින් සිංහල යුනිකෝඩ් යොදන්න...' : 'Format:\nකථිකයා 1: හෙලෝ\nකථිකයා 2: ආයුබෝවන්!'
             }
             className="w-full h-48 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 resize-y"
           />

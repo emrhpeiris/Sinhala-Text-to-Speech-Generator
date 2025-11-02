@@ -3,7 +3,7 @@ export enum GenerationMode {
   DIALOG = 'dialog',
 }
 
-// Using API voice names directly. These are the available prebuilt voices.
+// Using API voice names directly. These are the available prebuilt voices for Sinhala.
 export type VoiceOption = 'Puck' | 'Kore' | 'Zephyr' | 'Charon' | 'Fenrir';
 
 export const MALE_VOICES: VoiceOption[] = ['Puck', 'Zephyr', 'Charon', 'Fenrir'];

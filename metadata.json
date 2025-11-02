@@ -1,5 +1,5 @@
 {
-  "name": "Sinhala Text-to-Speech Generator",
-  "description": "Generate high-quality audio from Sinhala text using Google's Gemini API. Supports single-speaker generation with multiple voice options and a two-speaker dialog mode.",
+  "name": "Multilingual Text-to-Speech Generator",
+  "description": "Generate high-quality audio from Sinhala or English text using Google's Gemini API. Supports multiple voice options for each language, including a two-speaker dialog mode for Sinhala.",
   "requestFramePermissions": []
 }

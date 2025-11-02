@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES } from './types';
+import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES, Language, EnglishVoiceOption, ENGLISH_VOICES } from './types';
 import { generateSingleSpeakerAudio, generateDialogAudio } from './services/geminiService';
 import { decode, createWavBlob } from './utils/audioUtils';
 import Loader from './components/Loader';
@@ -8,8 +7,9 @@ import AudioPlayer from './components/AudioPlayer';
 
 const App: React.FC = () => {
   const [text, setText] = useState<string>('');
+  const [language, setLanguage] = useState<Language>(Language.SINHALA);
   const [generationMode, setGenerationMode] = useState<GenerationMode>(GenerationMode.SINGLE);
-  const [voice, setVoice] = useState<VoiceOption>('Puck');
+  const [voice, setVoice] = useState<VoiceOption | EnglishVoiceOption>('Puck');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +22,21 @@ const App: React.FC = () => {
       }
     };
   }, [audioUrl]);
+
+  // Reset settings when language changes
+  useEffect(() => {
+    if (language === Language.SINHALA) {
+      setVoice('Puck'); // Default Sinhala voice
+      setGenerationMode(GenerationMode.SINGLE);
+    } else {
+      setVoice('Kore'); // Default English voice (Female)
+      setGenerationMode(GenerationMode.SINGLE); // Dialog mode disabled for English
+    }
+    setText('');
+    setError(null);
+    setAudioUrl(null);
+  }, [language]);
+
 
   const handleGenerateAudio = useCallback(async () => {
     if (!text.trim()) {
@@ -39,7 +54,8 @@ const App: React.FC = () => {
     try {
       let base64Audio: string;
       if (generationMode === GenerationMode.SINGLE) {
-        base64Audio = await generateSingleSpeakerAudio(text, voice);
+        // The voice state now holds either a Sinhala or English voice name
+        base64Audio = await generateSingleSpeakerAudio(text, voice as VoiceOption);
       } else {
         base64Audio = await generateDialogAudio(text);
       }
@@ -61,6 +77,19 @@ const App: React.FC = () => {
     }
   }, [text, generationMode, voice, audioUrl]);
   
+  const LanguageButton: React.FC<{lang: Language; label: string}> = ({ lang, label }) => (
+    <button
+      onClick={() => setLanguage(lang)}
+      className={`w-full py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+        language === lang
+          ? 'bg-indigo-600 text-white shadow-md'
+          : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   const ModeButton: React.FC<{mode: GenerationMode; label: string}> = ({ mode, label }) => (
     <button
       onClick={() => setGenerationMode(mode)}
@@ -74,7 +103,7 @@ const App: React.FC = () => {
     </button>
   );
 
-  const VoiceButton: React.FC<{option: VoiceOption; label: string; icon: string}> = ({ option, label, icon }) => (
+  const VoiceButton: React.FC<{option: VoiceOption | EnglishVoiceOption; label: string; icon: string}> = ({ option, label, icon }) => (
     <button
         onClick={() => setVoice(option)}
         className={`w-full flex items-center justify-center py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
@@ -100,7 +129,7 @@ const App: React.FC = () => {
           </p>
           <div className="pt-2">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-800">
-              Sinhala Text-to-Speech
+              Multilingual Text-to-Speech
             </h1>
             <p className="text-slate-600">
               Powered by Google's Gemini AI
@@ -109,44 +138,66 @@ const App: React.FC = () => {
         </header>
 
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-700">1. Select Mode</h2>
+          <h2 className="text-lg font-semibold text-slate-700">1. Select Language</h2>
           <div className="grid grid-cols-2 gap-4">
-            <ModeButton mode={GenerationMode.SINGLE} label="Single Speaker" />
-            <ModeButton mode={GenerationMode.DIALOG} label="Dialog (2 Speakers)" />
+            <LanguageButton lang={Language.SINHALA} label="Sinhala" />
+            <LanguageButton lang={Language.ENGLISH} label="English" />
           </div>
         </section>
 
+        {language === Language.SINHALA && (
+          <section className="space-y-4 animate-fade-in">
+            <h2 className="text-lg font-semibold text-slate-700">2. Select Mode</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <ModeButton mode={GenerationMode.SINGLE} label="Single Speaker" />
+              <ModeButton mode={GenerationMode.DIALOG} label="Dialog (2 Speakers)" />
+            </div>
+          </section>
+        )}
+
         {generationMode === GenerationMode.SINGLE && (
           <section className="space-y-6 animate-fade-in">
-            <h2 className="text-lg font-semibold text-slate-700">2. Choose Voice</h2>
-            <div>
-              <h3 className="text-md font-medium text-slate-600 mb-3">Male Voices</h3>
+            <h2 className="text-lg font-semibold text-slate-700">{language === Language.SINHALA ? '3' : '2'}. Choose Voice</h2>
+            {language === Language.SINHALA ? (
+              <>
+                <div>
+                  <h3 className="text-md font-medium text-slate-600 mb-3">Male Voices</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {MALE_VOICES.map((voiceName, index) => (
+                        <VoiceButton key={voiceName} option={voiceName} label={`Male ${index + 1}`} icon="fa-male" />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-md font-medium text-slate-600 mb-3">Female Voices</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {FEMALE_VOICES.map((voiceName, index) => (
+                        <VoiceButton key={voiceName} option={voiceName} label={`Female ${index + 1}`} icon="fa-female" />
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {MALE_VOICES.map((voiceName, index) => (
-                    <VoiceButton key={voiceName} option={voiceName} label={`Male ${index + 1}`} icon="fa-male" />
+                {ENGLISH_VOICES.map(({ voice, label, icon }) => (
+                  <VoiceButton key={voice} option={voice} label={label} icon={icon} />
                 ))}
               </div>
-            </div>
-            <div>
-              <h3 className="text-md font-medium text-slate-600 mb-3">Female Voices</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {FEMALE_VOICES.map((voiceName, index) => (
-                    <VoiceButton key={voiceName} option={voiceName} label={`Female ${index + 1}`} icon="fa-female" />
-                ))}
-              </div>
-            </div>
+            )}
           </section>
         )}
 
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-700">
-            {generationMode === GenerationMode.SINGLE ? '3' : '2'}. Enter Text
+            {language === Language.SINHALA ? (generationMode === GenerationMode.SINGLE ? '4' : '3') : '3'}. Enter Text
           </h2>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={
-              generationMode === GenerationMode.SINGLE ? 'මෙතනින් සිංහල යුනිකෝඩ් යොදන්න...' : 'Format:\nකථිකයා 1: හෙලෝ\nකථිකයා 2: ආයුබෝවන්!'
+              language === Language.SINHALA
+                ? generationMode === GenerationMode.SINGLE ? 'මෙතනින් සිංහල යුනිකෝඩ් යොදන්න...' : 'Format:\nකථිකයා 1: හෙලෝ\nකථිකයා 2: ආයුබෝවන්!'
+                : 'Enter English text here...'
             }
             className="w-full h-48 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 resize-y"
           />

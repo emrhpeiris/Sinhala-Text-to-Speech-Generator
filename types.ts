@@ -6,6 +6,7 @@ export enum GenerationMode {
 export enum Language {
   SINHALA = 'sinhala',
   ENGLISH = 'english',
+  TAMIL = 'tamil',
 }
 
 // Using API voice names directly. These are the available prebuilt voices for Sinhala.
@@ -20,4 +21,9 @@ export const ENGLISH_VOICES: { label: string; voice: EnglishVoiceOption; icon: s
     { label: 'Male', voice: 'Puck', icon: 'fa-male' },
     { label: 'Narrator', voice: 'Charon', icon: 'fa-user-tie' }, // Using 'Charon' for a deeper narrator voice
     { label: 'Presenter', voice: 'Fenrir', icon: 'fa-microphone-alt' }, // Added new deep voice for presentations/audiobooks
+];
+
+export const TAMIL_VOICES: { label: string; voice: EnglishVoiceOption; icon: string }[] = [
+    { label: 'Female', voice: 'Kore', icon: 'fa-female' },
+    { label: 'Male', voice: 'Puck', icon: 'fa-male' },
 ];

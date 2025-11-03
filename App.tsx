@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES, Language, EnglishVoiceOption, ENGLISH_VOICES } from './types';
+import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES, Language, EnglishVoiceOption, ENGLISH_VOICES, TAMIL_VOICES } from './types';
 import { generateSingleSpeakerAudio, generateDialogAudio } from './services/geminiService';
 import { decode, createWavBlob } from './utils/audioUtils';
 import Loader from './components/Loader';
@@ -25,16 +25,20 @@ const App: React.FC = () => {
 
   // Reset settings when language changes
   useEffect(() => {
-    if (language === Language.SINHALA) {
-      setVoice('Puck'); // Default Sinhala voice
-      setGenerationMode(GenerationMode.SINGLE);
-    } else {
-      setVoice('Kore'); // Default English voice (Female)
-      setGenerationMode(GenerationMode.SINGLE); // Dialog mode disabled for English
-    }
+    // Reset common state for any language change
+    setGenerationMode(GenerationMode.SINGLE);
     setText('');
     setError(null);
     setAudioUrl(null);
+
+    // Set language-specific defaults
+    if (language === Language.SINHALA) {
+        setVoice('Puck'); // Default Sinhala voice
+    } else if (language === Language.ENGLISH) {
+        setVoice('Kore'); // Default English voice
+    } else { // Tamil
+        setVoice('Kore'); // Default Tamil voice
+    }
   }, [language]);
 
 
@@ -76,6 +80,8 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   }, [text, generationMode, voice, audioUrl]);
+
+  const stepOffset = language === Language.SINHALA ? 1 : 0;
   
   const LanguageButton: React.FC<{lang: Language; label: string}> = ({ lang, label }) => (
     <button
@@ -139,8 +145,9 @@ const App: React.FC = () => {
 
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-700">1. Select Language</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <LanguageButton lang={Language.SINHALA} label="Sinhala" />
+            <LanguageButton lang={Language.TAMIL} label="Tamil" />
             <LanguageButton lang={Language.ENGLISH} label="English" />
           </div>
         </section>
@@ -157,7 +164,7 @@ const App: React.FC = () => {
 
         {generationMode === GenerationMode.SINGLE && (
           <section className="space-y-6 animate-fade-in">
-            <h2 className="text-lg font-semibold text-slate-700">{language === Language.SINHALA ? '3' : '2'}. Choose Voice</h2>
+            <h2 className="text-lg font-semibold text-slate-700">{2 + stepOffset}. Choose Voice</h2>
             {language === Language.SINHALA ? (
               <>
                 <div>
@@ -177,9 +184,15 @@ const App: React.FC = () => {
                   </div>
                 </div>
               </>
-            ) : (
+            ) : language === Language.ENGLISH ? (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {ENGLISH_VOICES.map(({ voice, label, icon }) => (
+                  <VoiceButton key={voice} option={voice} label={label} icon={icon} />
+                ))}
+              </div>
+            ) : ( // Tamil
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {TAMIL_VOICES.map(({ voice, label, icon }) => (
                   <VoiceButton key={voice} option={voice} label={label} icon={icon} />
                 ))}
               </div>
@@ -189,7 +202,7 @@ const App: React.FC = () => {
 
         <section className="space-y-4">
           <h2 className="text-lg font-semibold text-slate-700">
-            {language === Language.SINHALA ? (generationMode === GenerationMode.SINGLE ? '4' : '3') : '3'}. Enter Text
+            {generationMode === GenerationMode.SINGLE ? 3 + stepOffset : 2 + stepOffset}. Enter Text
           </h2>
           <textarea
             value={text}
@@ -197,7 +210,9 @@ const App: React.FC = () => {
             placeholder={
               language === Language.SINHALA
                 ? generationMode === GenerationMode.SINGLE ? 'මෙතනින් සිංහල යුනිකෝඩ් යොදන්න...' : 'Format:\nකථිකයා 1: හෙලෝ\nකථිකයා 2: ආයුබෝවන්!'
-                : 'Enter English text here...'
+                : language === Language.ENGLISH 
+                ? 'Enter English text here...'
+                : 'உங்கள் உரையை இங்கே உள்ளிடவும்...'
             }
             className="w-full h-48 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200 resize-y"
           />

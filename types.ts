@@ -1,3 +1,4 @@
+
 export enum GenerationMode {
   SINGLE = 'single',
   DIALOG = 'dialog',
@@ -9,21 +10,32 @@ export enum Language {
   TAMIL = 'tamil',
 }
 
-// Using API voice names directly. These are the available prebuilt voices for Sinhala.
+// Using API voice names directly.
 export type VoiceOption = 'Puck' | 'Kore' | 'Zephyr' | 'Charon' | 'Fenrir';
-export type EnglishVoiceOption = 'Kore' | 'Puck' | 'Charon' | 'Fenrir';
 
-export const MALE_VOICES: VoiceOption[] = ['Puck', 'Zephyr', 'Charon', 'Fenrir'];
-export const FEMALE_VOICES: VoiceOption[] = ['Kore'];
+export interface VoiceProfile {
+  id: VoiceOption;
+  label: string;
+  gender: 'male' | 'female';
+  icon: string;
+}
 
-export const ENGLISH_VOICES: { label: string; voice: EnglishVoiceOption; icon: string }[] = [
-    { label: 'Female', voice: 'Kore', icon: 'fa-female' },
-    { label: 'Male', voice: 'Puck', icon: 'fa-male' },
-    { label: 'Narrator', voice: 'Charon', icon: 'fa-user-tie' }, // Using 'Charon' for a deeper narrator voice
-    { label: 'Presenter', voice: 'Fenrir', icon: 'fa-microphone-alt' }, // Added new deep voice for presentations/audiobooks
+export const SINHALA_VOICES_LIST: VoiceProfile[] = [
+    { id: 'Puck', label: 'M-Puck', gender: 'male', icon: 'fa-male' },
+    { id: 'Zephyr', label: 'F-Zephyr', gender: 'female', icon: 'fa-female' },
+    { id: 'Charon', label: 'M-Charon', gender: 'male', icon: 'fa-male' },
+    { id: 'Fenrir', label: 'M-Fenrir', gender: 'male', icon: 'fa-male' },
+    { id: 'Kore', label: 'F-Kore', gender: 'female', icon: 'fa-female' },
 ];
 
-export const TAMIL_VOICES: { label: string; voice: EnglishVoiceOption; icon: string }[] = [
-    { label: 'Female', voice: 'Kore', icon: 'fa-female' },
-    { label: 'Male', voice: 'Puck', icon: 'fa-male' },
+export const ENGLISH_VOICES_LIST: VoiceProfile[] = [
+    { id: 'Kore', label: 'F-Kore', gender: 'female', icon: 'fa-female' },
+    { id: 'Puck', label: 'M-Puck', gender: 'male', icon: 'fa-male' },
+    { id: 'Charon', label: 'M-Charon', gender: 'male', icon: 'fa-user-tie' },
+    { id: 'Fenrir', label: 'M-Fenrir', gender: 'male', icon: 'fa-microphone-alt' },
+];
+
+export const TAMIL_VOICES_LIST: VoiceProfile[] = [
+    { id: 'Kore', label: 'F-Kore', gender: 'female', icon: 'fa-female' },
+    { id: 'Puck', label: 'M-Puck', gender: 'male', icon: 'fa-male' },
 ];

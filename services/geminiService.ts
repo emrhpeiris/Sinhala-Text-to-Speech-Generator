@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { VoiceOption } from '../types';
 
 const API_KEY = process.env.API_KEY;
@@ -11,24 +11,39 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 const model = "gemini-2.5-flash-preview-tts";
 
 export async function generateSingleSpeakerAudio(text: string, voice: VoiceOption): Promise<string> {
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: [{ parts: [{ text: text }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: voice },
+  try {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: text,
+      config: {
+        responseModalities: ['AUDIO' as any],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: voice },
+          },
         },
       },
-    },
-  });
+    });
 
-  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) {
-    throw new Error("Audio generation failed, no audio data received.");
+    const candidate = response.candidates?.[0];
+    const part = candidate?.content?.parts?.[0];
+    const base64Audio = part?.inlineData?.data;
+    
+    if (!base64Audio) {
+      const modelMessage = part?.text;
+      const finishReason = candidate?.finishReason;
+      
+      if (modelMessage) {
+         throw new Error(`Model refused: ${modelMessage}`);
+      }
+      
+      throw new Error(`Audio generation failed. No audio data received. Finish reason: ${finishReason || 'Unknown'}`);
+    }
+    return base64Audio;
+  } catch (error: any) {
+    console.error("Gemini API Error:", error);
+    throw error;
   }
-  return base64Audio;
 }
 
 export async function generateDialogAudio(text: string): Promise<string> {
@@ -51,35 +66,50 @@ export async function generateDialogAudio(text: string): Promise<string> {
 
   const prompt = `TTS the following conversation between ${speakers[0]} and ${speakers[1]}:\n${text}`;
   
-  const response = await ai.models.generateContent({
-    model: model,
-    contents: [{ parts: [{ text: prompt }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        multiSpeakerVoiceConfig: {
-          speakerVoiceConfigs: [
-            {
-              speaker: speakers[0],
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Puck' }, // Male default
+  try {
+    const response = await ai.models.generateContent({
+      model: model,
+      contents: prompt,
+      config: {
+        responseModalities: ['AUDIO' as any],
+        speechConfig: {
+          multiSpeakerVoiceConfig: {
+            speakerVoiceConfigs: [
+              {
+                speaker: speakers[0],
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: 'Puck' }, // Male default
+                },
               },
-            },
-            {
-              speaker: speakers[1],
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Kore' }, // Female default
+              {
+                speaker: speakers[1],
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: 'Kore' }, // Female default
+                },
               },
-            },
-          ],
+            ],
+          },
         },
       },
-    },
-  });
+    });
 
-  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) {
-    throw new Error("Audio generation failed, no audio data received.");
+    const candidate = response.candidates?.[0];
+    const part = candidate?.content?.parts?.[0];
+    const base64Audio = part?.inlineData?.data;
+    
+    if (!base64Audio) {
+      const modelMessage = part?.text;
+      const finishReason = candidate?.finishReason;
+
+      if (modelMessage) {
+          throw new Error(`Model refused: ${modelMessage}`);
+      }
+
+      throw new Error(`Audio generation failed. No audio data received. Finish reason: ${finishReason || 'Unknown'}`);
+    }
+    return base64Audio;
+  } catch (error: any) {
+    console.error("Gemini API Dialog Error:", error);
+    throw error;
   }
-  return base64Audio;
 }

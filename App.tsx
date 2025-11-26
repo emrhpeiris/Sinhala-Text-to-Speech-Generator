@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { GenerationMode, VoiceOption, MALE_VOICES, FEMALE_VOICES, Language, EnglishVoiceOption, ENGLISH_VOICES, TAMIL_VOICES } from './types';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { GenerationMode, VoiceOption, Language, SINHALA_VOICES_LIST, ENGLISH_VOICES_LIST, TAMIL_VOICES_LIST, VoiceProfile } from './types';
 import { generateSingleSpeakerAudio, generateDialogAudio } from './services/geminiService';
 import { decode, createWavBlob } from './utils/audioUtils';
 import Loader from './components/Loader';
@@ -9,16 +9,24 @@ const App: React.FC = () => {
   const [text, setText] = useState<string>('');
   const [language, setLanguage] = useState<Language>(Language.SINHALA);
   const [generationMode, setGenerationMode] = useState<GenerationMode>(GenerationMode.SINGLE);
-  const [voice, setVoice] = useState<VoiceOption | EnglishVoiceOption>('Puck');
+  const [voice, setVoice] = useState<VoiceOption>('Puck');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Preview state
+  const [previewingVoice, setPreviewingVoice] = useState<VoiceOption | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     // Cleanup audio URL on component unmount or when a new one is created
     return () => {
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
+      }
+      if (currentAudioRef.current) {
+          currentAudioRef.current.pause();
+          currentAudioRef.current = null;
       }
     };
   }, [audioUrl]);
@@ -58,8 +66,7 @@ const App: React.FC = () => {
     try {
       let base64Audio: string;
       if (generationMode === GenerationMode.SINGLE) {
-        // The voice state now holds either a Sinhala or English voice name
-        base64Audio = await generateSingleSpeakerAudio(text, voice as VoiceOption);
+        base64Audio = await generateSingleSpeakerAudio(text, voice);
       } else {
         base64Audio = await generateDialogAudio(text);
       }
@@ -80,6 +87,44 @@ const App: React.FC = () => {
       setIsLoading(false);
     }
   }, [text, generationMode, voice, audioUrl]);
+
+  const handlePlayPreview = async (previewVoice: VoiceOption, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selecting the voice when clicking preview
+    
+    if (previewingVoice) return; // Prevent multiple clicks
+
+    setPreviewingVoice(previewVoice);
+    
+    try {
+        let previewText = "Hello, how are you today?";
+        if (language === Language.SINHALA) previewText = "ආයුබෝවන්, සුභ දවසක් වේවා!"; // Ayubowan, suba dawasak wewa
+        if (language === Language.TAMIL) previewText = "வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?"; // Vanakkam, neengal eppadi irukirargal
+
+        const base64Audio = await generateSingleSpeakerAudio(previewText, previewVoice);
+        const pcmData = decode(base64Audio);
+        const wavBlob = createWavBlob(pcmData, 24000, 1);
+        const url = URL.createObjectURL(wavBlob);
+        
+        if (currentAudioRef.current) {
+            currentAudioRef.current.pause();
+        }
+
+        const audio = new Audio(url);
+        currentAudioRef.current = audio;
+        
+        audio.onended = () => {
+            setPreviewingVoice(null);
+            URL.revokeObjectURL(url);
+        };
+        
+        await audio.play();
+
+    } catch (err) {
+        console.error("Preview failed", err);
+        setPreviewingVoice(null);
+        // Optional: show a small toast or temporary error specifically for preview
+    }
+  };
 
   const stepOffset = language === Language.SINHALA ? 1 : 0;
   
@@ -109,19 +154,56 @@ const App: React.FC = () => {
     </button>
   );
 
-  const VoiceButton: React.FC<{option: VoiceOption | EnglishVoiceOption; label: string; icon: string}> = ({ option, label, icon }) => (
-    <button
-        onClick={() => setVoice(option)}
-        className={`w-full flex items-center justify-center py-3 px-4 text-sm font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
-            voice === option
-            ? 'bg-indigo-600 text-white shadow-md'
-            : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'
-        }`}
-    >
-        <i className={`fas ${icon} mr-2`}></i>
-        {label}
-    </button>
-  );
+  const VoiceButton: React.FC<{profile: VoiceProfile}> = ({ profile }) => {
+    const isSelected = voice === profile.id;
+    const isPreviewing = previewingVoice === profile.id;
+
+    return (
+        <div 
+            onClick={() => setVoice(profile.id)}
+            className={`relative flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                isSelected 
+                ? 'border-indigo-600 bg-indigo-50 shadow-md' 
+                : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+            }`}
+        >
+            <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
+                    <i className={`fas ${profile.icon}`}></i>
+                </div>
+                <span className={`text-sm font-bold ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                    {profile.label}
+                </span>
+            </div>
+            
+            <button
+                onClick={(e) => handlePlayPreview(profile.id, e)}
+                disabled={previewingVoice !== null}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors focus:outline-none ${
+                    isSelected 
+                    ? 'hover:bg-indigo-200 text-indigo-600' 
+                    : 'hover:bg-slate-200 text-slate-400 hover:text-indigo-600'
+                }`}
+                title="Preview Voice"
+            >
+                {isPreviewing ? (
+                    <i className="fas fa-circle-notch fa-spin"></i>
+                ) : (
+                    <i className="fas fa-play text-xs"></i>
+                )}
+            </button>
+        </div>
+    );
+  };
+
+  const getVoiceList = () => {
+      switch (language) {
+          case Language.SINHALA: return SINHALA_VOICES_LIST;
+          case Language.ENGLISH: return ENGLISH_VOICES_LIST;
+          case Language.TAMIL: return TAMIL_VOICES_LIST;
+          default: return [];
+      }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -165,38 +247,11 @@ const App: React.FC = () => {
         {generationMode === GenerationMode.SINGLE && (
           <section className="space-y-6 animate-fade-in">
             <h2 className="text-lg font-semibold text-slate-700">{2 + stepOffset}. Choose Voice</h2>
-            {language === Language.SINHALA ? (
-              <>
-                <div>
-                  <h3 className="text-md font-medium text-slate-600 mb-3">Male Voices</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {MALE_VOICES.map((voiceName, index) => (
-                        <VoiceButton key={voiceName} option={voiceName} label={`Male ${index + 1}`} icon="fa-male" />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-md font-medium text-slate-600 mb-3">Female Voices</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {FEMALE_VOICES.map((voiceName, index) => (
-                        <VoiceButton key={voiceName} option={voiceName} label={`Female ${index + 1}`} icon="fa-female" />
-                    ))}
-                  </div>
-                </div>
-              </>
-            ) : language === Language.ENGLISH ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {ENGLISH_VOICES.map(({ voice, label, icon }) => (
-                  <VoiceButton key={voice} option={voice} label={label} icon={icon} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {getVoiceList().map((profile) => (
+                    <VoiceButton key={profile.id} profile={profile} />
                 ))}
-              </div>
-            ) : ( // Tamil
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {TAMIL_VOICES.map(({ voice, label, icon }) => (
-                  <VoiceButton key={voice} option={voice} label={label} icon={icon} />
-                ))}
-              </div>
-            )}
+            </div>
           </section>
         )}
 
